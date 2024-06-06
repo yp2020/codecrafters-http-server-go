@@ -6,8 +6,11 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
+	"strings"
 )
 
+const StausOK = "HTTP/1.1 200 OK\r\n"
 const CRLF = "\r\n"
 
 func Handler(conn net.Conn) {
@@ -22,6 +25,21 @@ func Handler(conn net.Conn) {
 	if request.URL.Path == "/" {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 		return
+
+	} else if strings.Contains(request.URL.Path, "/echo") {
+		// /echo/{str}
+		path := request.URL.Path
+		str := strings.Split(path, "/")[2]
+		fmt.Println("str: ", str)
+		length := len(str)
+		fmt.Println("len: ", length)
+		fmt.Println("string(len): ", string(length))
+
+		contentType := "Content-Type: text/plain" + CRLF
+		contentLength := "Content-Length: " + strconv.Itoa(length) + CRLF
+		res := StausOK + contentType + contentLength + CRLF + str
+		fmt.Println("res: ", res)
+		conn.Write([]byte(res))
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
