@@ -1,10 +1,31 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 )
+
+const CRLF = "\r\n"
+
+func Handler(conn net.Conn) {
+	defer conn.Close()
+	request, err := http.ReadRequest(bufio.NewReader(conn))
+	if err != nil {
+		fmt.Println("Error reading request.", err.Error())
+		return
+	}
+	fmt.Printf("Request: %s %s \n", request.Method, request.URL.Path)
+
+	if request.URL.Path == "/" {
+		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+		return
+	} else {
+		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
+	}
+}
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -23,7 +44,7 @@ func main() {
 		fmt.Println("Error accepting connection: ", err.Error())
 		os.Exit(1)
 	}
-	//要求返回一个 200
-	conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
+	Handler(conn)
+	//还可以直接用 conn.Read 方法来做解析，先读进来,再用 "\r\n" 切分
 
 }
