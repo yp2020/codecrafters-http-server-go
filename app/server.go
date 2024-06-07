@@ -68,12 +68,15 @@ func main() {
 		os.Exit(1)
 	}
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+		// 并发处理 请求
+		go Handler(conn)
+		//还可以直接用 conn.Read 方法来做解析，先读进来,再用 "\r\n" 切分
 	}
-	Handler(conn)
-	//还可以直接用 conn.Read 方法来做解析，先读进来,再用 "\r\n" 切分
 
 }
