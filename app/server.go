@@ -10,8 +10,12 @@ import (
 	"strings"
 )
 
-const StausOK = "HTTP/1.1 200 OK\r\n"
-const CRLF = "\r\n"
+const (
+	StausOK       = "HTTP/1.1 200 OK\r\n"
+	CRLF          = "\r\n"
+	ContentType   = "Content-Type: text/plain"
+	ContentLength = "Content-Length: "
+)
 
 func Handler(conn net.Conn) {
 	defer conn.Close()
@@ -26,6 +30,13 @@ func Handler(conn net.Conn) {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 		return
 
+	} else if request.URL.Path == "/user-agent" {
+		header := request.Header
+		value := header.Get("User-Agent")
+		fmt.Println("value: ", value)
+		length := len(value)
+		res := StausOK + ContentType + CRLF + ContentLength + strconv.Itoa(length) + CRLF + CRLF + value
+		conn.Write([]byte(res))
 	} else if strings.Contains(request.URL.Path, "/echo") {
 		// /echo/{str}
 		path := request.URL.Path
@@ -35,8 +46,8 @@ func Handler(conn net.Conn) {
 		fmt.Println("len: ", length)
 		fmt.Println("string(len): ", string(length))
 
-		contentType := "Content-Type: text/plain" + CRLF
-		contentLength := "Content-Length: " + strconv.Itoa(length) + CRLF
+		contentType := ContentType + CRLF
+		contentLength := ContentLength + strconv.Itoa(length) + CRLF
 		res := StausOK + contentType + contentLength + CRLF + str
 		fmt.Println("res: ", res)
 		conn.Write([]byte(res))
