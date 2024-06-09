@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -27,21 +28,58 @@ func Handler(conn net.Conn) {
 		return
 	}
 	fmt.Printf("Request: %s %s \n", request.Method, request.URL.Path)
+	if request.Method == "POST" {
+		handlerPostRequest(request, conn)
+	} else if request.Method == "GET" {
+		handlerGetRequest(request, conn)
+	} else {
+		fmt.Println("Not Support " + request.Method + " Method")
+	}
+}
 
-	if request.URL.Path == "/" {
+func handlerPostRequest(request *http.Request, conn net.Conn) {
+	path := request.URL.Path
+	if strings.Contains(path, "/files/") {
+		fileName := strings.TrimPrefix(path, "/files/")
+		//// 测试情况下 dir 设置为当前目录 win computer so
+		//dir, _ := os.Getwd()
+		//filePath := dir + "\\" + fileName
+		dir := os.Args[2]
+		filePath := dir + fileName
+		fmt.Println("filePath: ", filePath)
+		// 向文件中写入内容
+		value, _ := io.ReadAll(request.Body)
+		if err := os.WriteFile(filePath, value, 0666); err != nil {
+			fmt.Println("err")
+		}
+		conn.Write([]byte("HTTP/1.1 201 Created\r\n\r\n"))
+	}
+
+}
+
+func handlerGetRequest(request *http.Request, conn net.Conn) {
+	switch path := request.URL.Path; path {
+	case "/":
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 		return
+	case "/user-agent":
+		head := request.Header
+		value := head.Get("User-Agent")
+		length := len(value)
+		contentLength := ContentLength + strconv.Itoa(length)
+		res := StatusOK + ContentTypeText + CRLF + contentLength + CRLF + CRLF + value
+		conn.Write([]byte(res))
+		return
+	}
 
-	} else if strings.Contains(request.URL.Path, "/files") {
+	if strings.Contains(request.URL.Path, "/files") {
 		// /files/foo
-
 		url := request.URL.Path
 		fileName := strings.TrimPrefix(url, "/files/")
 		dir := os.Args[2]
 		fmt.Println("fileName: ", fileName)
 		fmt.Println("dir+fileName: ", dir+fileName)
 		data, err := os.ReadFile(dir + fileName)
-		// 文件名字成功读取到了，但是还是没有搞出来，这是为什么呢？
 		// 可能是路径问题
 		if err != nil {
 			fmt.Println("err: ", err)
@@ -50,13 +88,6 @@ func Handler(conn net.Conn) {
 		}
 		fmt.Println("success")
 		res := StatusOK + ContentTypeOctet + CRLF + ContentLength + strconv.Itoa(len(data)) + CRLF + CRLF + string(data)
-		conn.Write([]byte(res))
-	} else if request.URL.Path == "/user-agent" {
-		header := request.Header
-		value := header.Get("User-Agent")
-		fmt.Println("value: ", value)
-		length := len(value)
-		res := StatusOK + ContentTypeText + CRLF + ContentLength + strconv.Itoa(length) + CRLF + CRLF + value
 		conn.Write([]byte(res))
 	} else if strings.Contains(request.URL.Path, "/echo") {
 		// /echo/{str}
