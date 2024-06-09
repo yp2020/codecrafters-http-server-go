@@ -11,10 +11,12 @@ import (
 )
 
 const (
-	StausOK       = "HTTP/1.1 200 OK\r\n"
-	CRLF          = "\r\n"
-	ContentType   = "Content-Type: text/plain"
-	ContentLength = "Content-Length: "
+	StatusOK         = "HTTP/1.1 200 OK\r\n"
+	CRLF             = "\r\n"
+	ContentTypeText  = "Content-Type: text/plain"
+	ContentTypeOctet = "Content-Type: application/octet-stream"
+	ContentLength    = "Content-Length: "
+	Status404        = "HTTP/1.1 404 Not Found\r\n"
 )
 
 func Handler(conn net.Conn) {
@@ -30,12 +32,31 @@ func Handler(conn net.Conn) {
 		conn.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
 		return
 
+	} else if strings.Contains(request.URL.Path, "/files") {
+		// /files/foo
+
+		url := request.URL.Path
+		fileName := strings.TrimPrefix(url, "/files/")
+		dir := os.Args[2]
+		fmt.Println("fileName: ", fileName)
+		fmt.Println("dir+fileName: ", dir+fileName)
+		data, err := os.ReadFile(dir + fileName)
+		// 文件名字成功读取到了，但是还是没有搞出来，这是为什么呢？
+		// 可能是路径问题
+		if err != nil {
+			fmt.Println("err: ", err)
+			conn.Write([]byte(Status404 + CRLF))
+			return
+		}
+		fmt.Println("success")
+		res := StatusOK + ContentTypeOctet + CRLF + ContentLength + strconv.Itoa(len(data)) + CRLF + CRLF + string(data)
+		conn.Write([]byte(res))
 	} else if request.URL.Path == "/user-agent" {
 		header := request.Header
 		value := header.Get("User-Agent")
 		fmt.Println("value: ", value)
 		length := len(value)
-		res := StausOK + ContentType + CRLF + ContentLength + strconv.Itoa(length) + CRLF + CRLF + value
+		res := StatusOK + ContentTypeText + CRLF + ContentLength + strconv.Itoa(length) + CRLF + CRLF + value
 		conn.Write([]byte(res))
 	} else if strings.Contains(request.URL.Path, "/echo") {
 		// /echo/{str}
@@ -46,9 +67,9 @@ func Handler(conn net.Conn) {
 		fmt.Println("len: ", length)
 		fmt.Println("string(len): ", string(length))
 
-		contentType := ContentType + CRLF
+		contentType := ContentTypeText + CRLF
 		contentLength := ContentLength + strconv.Itoa(length) + CRLF
-		res := StausOK + contentType + contentLength + CRLF + str
+		res := StatusOK + contentType + contentLength + CRLF + str
 		fmt.Println("res: ", res)
 		conn.Write([]byte(res))
 	} else {
