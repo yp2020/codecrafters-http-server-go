@@ -16,6 +16,7 @@ const (
 	CRLF             = "\r\n"
 	ContentTypeText  = "Content-Type: text/plain"
 	ContentTypeOctet = "Content-Type: application/octet-stream"
+	ContentEncoding  = "Content-Encoding: "
 	ContentLength    = "Content-Length: "
 	Status404        = "HTTP/1.1 404 Not Found\r\n"
 )
@@ -95,12 +96,20 @@ func handlerGetRequest(request *http.Request, conn net.Conn) {
 		str := strings.Split(path, "/")[2]
 		fmt.Println("str: ", str)
 		length := len(str)
-		fmt.Println("len: ", length)
-		fmt.Println("string(len): ", string(length))
-
+		fmt.Println("len(str): ", length)
 		contentType := ContentTypeText + CRLF
 		contentLength := ContentLength + strconv.Itoa(length) + CRLF
-		res := StatusOK + contentType + contentLength + CRLF + str
+
+		// 获取 encoding
+		encoding := request.Header.Get("accept-encoding")
+		fmt.Println("encoding: ", encoding)
+		var res string
+		if encoding == "gzip" || encoding == "deflate" {
+			res = StatusOK + ContentEncoding + encoding + CRLF + contentType + contentLength + CRLF + str
+		} else {
+			res = StatusOK + contentType + contentLength + CRLF + str
+		}
+
 		fmt.Println("res: ", res)
 		conn.Write([]byte(res))
 	} else {
