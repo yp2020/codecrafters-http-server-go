@@ -100,12 +100,14 @@ func handlerGetRequest(request *http.Request, conn net.Conn) {
 		contentType := ContentTypeText + CRLF
 		contentLength := ContentLength + strconv.Itoa(length) + CRLF
 
-		// 获取 encoding
-		encoding := request.Header.Get("accept-encoding")
-		fmt.Println("encoding: ", encoding)
+		// 获取 accept-encoding
+		encodingStr := request.Header.Get("accept-encoding")
+		fmt.Println("encodingStr: ", encodingStr)
+
 		var res string
-		if encoding == "gzip" || encoding == "deflate" {
-			res = StatusOK + ContentEncoding + encoding + CRLF + contentType + contentLength + CRLF + str
+
+		if checkValidEncoding(encodingStr) {
+			res = StatusOK + ContentEncoding + "gzip" + CRLF + contentType + contentLength + CRLF + str
 		} else {
 			res = StatusOK + contentType + contentLength + CRLF + str
 		}
@@ -115,6 +117,18 @@ func handlerGetRequest(request *http.Request, conn net.Conn) {
 	} else {
 		conn.Write([]byte("HTTP/1.1 404 Not Found\r\n\r\n"))
 	}
+}
+
+func checkValidEncoding(encodingStr string) bool {
+	encodingArr := strings.Split(encodingStr, ", ")
+	fmt.Println("encodingArr: ", encodingArr)
+
+	for _, value := range encodingArr {
+		if value == "gzip" {
+			return true
+		}
+	}
+	return false
 }
 
 func main() {
