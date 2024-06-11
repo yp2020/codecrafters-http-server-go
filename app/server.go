@@ -110,7 +110,7 @@ func handlerGetRequest(request *http.Request, conn net.Conn) {
 			var buf bytes.Buffer
 			writer := gzip.NewWriter(&buf)
 			writer.Write([]byte(str))
-			writer.Close()
+			defer writer.Close()
 			content := buf.String()
 			//content := str
 			//var buffer bytes.Buffer
