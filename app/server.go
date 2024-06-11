@@ -2,6 +2,8 @@ package main
 
 import (
 	"bufio"
+	"bytes"
+	"compress/gzip"
 	"fmt"
 	"io"
 	"net"
@@ -94,20 +96,29 @@ func handlerGetRequest(request *http.Request, conn net.Conn) {
 		// /echo/{str}
 		path := request.URL.Path
 		str := strings.Split(path, "/")[2]
-		fmt.Println("str: ", str)
 		length := len(str)
-		fmt.Println("len(str): ", length)
 		contentType := ContentTypeText + CRLF
 		contentLength := ContentLength + strconv.Itoa(length) + CRLF
-
 		// 获取 accept-encoding
 		encodingStr := request.Header.Get("accept-encoding")
 		fmt.Println("encodingStr: ", encodingStr)
 
 		var res string
-
 		if checkValidEncoding(encodingStr) {
-			res = StatusOK + ContentEncoding + "gzip" + CRLF + contentType + contentLength + CRLF + str
+			// 压缩数据
+			//var buf bytes.Buffer
+			//writer := gzip.NewWriter(&buf)
+			//writer.Write([]byte(str))
+			//defer writer.Close()
+			//content := buf.String()
+			content := str
+			var buffer bytes.Buffer
+			w := gzip.NewWriter(&buffer)
+			w.Write([]byte(content))
+			w.Close()
+			content = buffer.String()
+
+			res = StatusOK + ContentEncoding + "gzip" + CRLF + contentType + ContentLength + fmt.Sprint(len(content)) + CRLF + CRLF + content
 		} else {
 			res = StatusOK + contentType + contentLength + CRLF + str
 		}
