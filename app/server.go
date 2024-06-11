@@ -105,18 +105,19 @@ func handlerGetRequest(request *http.Request, conn net.Conn) {
 
 		var res string
 		if checkValidEncoding(encodingStr) {
+			// 这里的压缩数据 别人的代码能过，但是我的过不了 奇怪
 			// 压缩数据
-			//var buf bytes.Buffer
-			//writer := gzip.NewWriter(&buf)
-			//writer.Write([]byte(str))
-			//defer writer.Close()
-			//content := buf.String()
-			content := str
-			var buffer bytes.Buffer
-			w := gzip.NewWriter(&buffer)
-			w.Write([]byte(content))
-			w.Close()
-			content = buffer.String()
+			var buf bytes.Buffer
+			writer := gzip.NewWriter(&buf)
+			writer.Write([]byte(str))
+			defer writer.Close()
+			content := buf.String()
+			//content := str
+			//var buffer bytes.Buffer
+			//w := gzip.NewWriter(&buffer)
+			//w.Write([]byte(content))
+			//w.Close()
+			//content = buffer.String()
 
 			res = StatusOK + ContentEncoding + "gzip" + CRLF + contentType + ContentLength + fmt.Sprint(len(content)) + CRLF + CRLF + content
 		} else {
